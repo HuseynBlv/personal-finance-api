@@ -13,7 +13,6 @@ spring:
     show-sql: false
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
         jdbc:
           time_zone: UTC
@@ -22,6 +21,11 @@ spring:
 
 server:
   port: ${SERVER_PORT:8080}
+
+security:
+  jwt:
+    secret: ${JWT_SECRET_BASE64:Zm9yLWRldmVsb3BtZW50LW9ubHktY2hhbmdlLW1lLXRvLWEtc2VjdXJlLWJhc2U2NC1zZWNyZXQ=}
+    expiration-ms: ${JWT_EXPIRATION_MS:3600000}
 
 springdoc:
   api-docs:

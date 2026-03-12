@@ -1,5 +1,6 @@
 package com.portfolio.finance.service;
 
+import com.portfolio.finance.config.JwtUtil;
 import com.portfolio.finance.dto.AuthResponse;
 import com.portfolio.finance.dto.LoginRequest;
 import com.portfolio.finance.dto.RegisterRequest;
@@ -7,8 +8,12 @@ import com.portfolio.finance.entity.User;
 import com.portfolio.finance.exception.InvalidCredentialsException;
 import com.portfolio.finance.exception.ResourceAlreadyExistsException;
 import com.portfolio.finance.repository.UserRepository;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationServiceException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,10 +22,11 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AuthService {
 
-    private static final long TOKEN_EXPIRATION_SECONDS = 3600L;
-
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
+    private final CustomUserDetailsService customUserDetailsService;
+    private final JwtUtil jwtUtil;
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -41,21 +47,27 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public AuthResponse login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password"));
-
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
+        } catch (BadCredentialsException | AuthenticationServiceException exception) {
             throw new InvalidCredentialsException("Invalid email or password");
         }
+
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password"));
 
         return issueToken(user);
     }
 
     private AuthResponse issueToken(User user) {
+        UserDetails userDetails = customUserDetailsService.loadUserByUsername(user.getEmail());
+        String token = jwtUtil.generateToken(userDetails);
+
         return AuthResponse.builder()
-                .accessToken(UUID.randomUUID().toString())
+                .accessToken(token)
                 .tokenType("Bearer")
-                .expiresIn(TOKEN_EXPIRATION_SECONDS)
+                .expiresIn(jwtUtil.getExpirationSeconds())
                 .userId(user.getId())
                 .email(user.getEmail())
                 .build();
