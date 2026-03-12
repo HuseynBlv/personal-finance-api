@@ -47,6 +47,25 @@ public class AccountService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<AccountResponse> getAccounts(Long userId) {
+        if (userId != null) {
+            return getUserAccounts(userId);
+        }
+
+        return accountRepository.findAll()
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public AccountResponse getAccountById(Long accountId) {
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new ResourceNotFoundException("Account not found with id: " + accountId));
+        return toResponse(account);
+    }
+
     @Transactional
     public AccountResponse updateAccountBalance(Long accountId, BigDecimal newBalance) {
         if (newBalance == null || newBalance.compareTo(BigDecimal.ZERO) < 0) {

@@ -63,6 +63,13 @@ public class TransactionService {
     }
 
     @Transactional(readOnly = true)
+    public TransactionResponse getTransactionById(Long transactionId) {
+        Transaction transaction = transactionRepository.findById(transactionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Transaction not found with id: " + transactionId));
+        return toResponse(transaction);
+    }
+
+    @Transactional(readOnly = true)
     public List<TransactionResponse> filterTransactions(
             Long accountId,
             String category,
