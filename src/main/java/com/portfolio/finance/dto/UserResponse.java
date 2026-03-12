@@ -1,5 +1,6 @@
 package com.portfolio.finance.dto;
 
+import java.time.Instant;
 import lombok.Builder;
 import lombok.Value;
 
@@ -8,5 +9,5 @@ import lombok.Value;
 public class UserResponse {
     Long id;
     String email;
-    String fullName;
+    Instant createdAt;
 }

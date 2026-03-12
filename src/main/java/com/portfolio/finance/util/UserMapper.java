@@ -12,7 +12,7 @@ public final class UserMapper {
         return UserResponse.builder()
                 .id(user.getId())
                 .email(user.getEmail())
-                .fullName(user.getFullName())
+                .createdAt(user.getCreatedAt())
                 .build();
     }
 }

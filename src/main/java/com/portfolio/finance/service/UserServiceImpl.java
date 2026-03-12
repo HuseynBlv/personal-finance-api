@@ -36,7 +36,7 @@ public class UserServiceImpl implements UserService {
 
         User user = User.builder()
                 .email(request.getEmail())
-                .fullName(request.getFullName())
+                .password(request.getPassword())
                 .build();
 
         return UserMapper.toUserResponse(userRepository.save(user));
