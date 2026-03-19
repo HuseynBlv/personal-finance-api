@@ -1,72 +1,72 @@
 package com.portfolio.finance.exception;
 
-import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ValidationException;
 import java.time.Instant;
 import java.util.stream.Collectors;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.bind.annotation.ResponseBody;
 
-@RestControllerAdvice
+@ControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(ResourceAlreadyExistsException.class)
-    public ResponseEntity<ErrorResponse> handleResourceAlreadyExists(
-            ResourceAlreadyExistsException exception,
-            HttpServletRequest request) {
-        return buildErrorResponse(HttpStatus.CONFLICT, exception.getMessage(), request);
-    }
-
+    @ResponseBody
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleResourceNotFound(
-            ResourceNotFoundException exception,
-            HttpServletRequest request) {
-        return buildErrorResponse(HttpStatus.NOT_FOUND, exception.getMessage(), request);
+    public ResponseEntity<ErrorResponse> handleResourceNotFound(ResourceNotFoundException exception) {
+        return buildErrorResponse(HttpStatus.NOT_FOUND, "Resource not found", exception.getMessage());
     }
 
-    @ExceptionHandler(InvalidCredentialsException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidCredentials(
-            InvalidCredentialsException exception,
-            HttpServletRequest request) {
-        return buildErrorResponse(HttpStatus.UNAUTHORIZED, exception.getMessage(), request);
+    @ResponseBody
+    @ExceptionHandler(ValidationException.class)
+    public ResponseEntity<ErrorResponse> handleValidationException(ValidationException exception) {
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Validation failed", exception.getMessage());
     }
 
-    @ExceptionHandler({BadRequestException.class, InsufficientBalanceException.class})
-    public ResponseEntity<ErrorResponse> handleBadRequest(
-            ApiException exception,
-            HttpServletRequest request) {
-        return buildErrorResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request);
+    @ResponseBody
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErrorResponse> handleAuthenticationException(AuthenticationException exception) {
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Authentication failed", exception.getMessage());
     }
 
+    @ResponseBody
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidation(
-            MethodArgumentNotValidException exception,
-            HttpServletRequest request) {
+    public ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(MethodArgumentNotValidException exception) {
         String message = exception.getBindingResult()
                 .getFieldErrors()
                 .stream()
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
                 .collect(Collectors.joining(", "));
-        return buildErrorResponse(HttpStatus.BAD_REQUEST, message, request);
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Validation failed", message);
     }
 
+    @ResponseBody
+    @ExceptionHandler(ResourceAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleResourceAlreadyExists(ResourceAlreadyExistsException exception) {
+        return buildErrorResponse(HttpStatus.CONFLICT, "Resource already exists", exception.getMessage());
+    }
+
+    @ResponseBody
+    @ExceptionHandler({BadRequestException.class, InsufficientBalanceException.class})
+    public ResponseEntity<ErrorResponse> handleBadRequest(ApiException exception) {
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Bad request", exception.getMessage());
+    }
+
+    @ResponseBody
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleGeneric(Exception exception, HttpServletRequest request) {
-        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, exception.getMessage(), request);
+    public ResponseEntity<ErrorResponse> handleGeneric(Exception exception) {
+        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error", exception.getMessage());
     }
 
-    private ResponseEntity<ErrorResponse> buildErrorResponse(
-            HttpStatus status,
-            String message,
-            HttpServletRequest request) {
+    private ResponseEntity<ErrorResponse> buildErrorResponse(HttpStatus status, String error, String message) {
         ErrorResponse body = ErrorResponse.builder()
                 .timestamp(Instant.now())
                 .status(status.value())
-                .error(status.getReasonPhrase())
+                .error(error)
                 .message(message)
-                .path(request.getRequestURI())
                 .build();
 
         return ResponseEntity.status(status).body(body);

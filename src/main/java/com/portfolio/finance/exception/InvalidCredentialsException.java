@@ -1,6 +1,8 @@
 package com.portfolio.finance.exception;
 
-public class InvalidCredentialsException extends ApiException {
+import org.springframework.security.core.AuthenticationException;
+
+public class InvalidCredentialsException extends AuthenticationException {
 
     public InvalidCredentialsException(String message) {
         super(message);
